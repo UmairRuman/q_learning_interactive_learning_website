@@ -1,5 +1,5 @@
 // ============================================================================
-// FILE 16: src/App.jsx (MAIN FILE)
+// FILE 16: src/App.jsx (MAIN FILE) - CORRECTED
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -21,6 +21,7 @@ import { useStepByStep } from './hooks/useStepByStep';
 import { StepByStepControls } from './components/StepByStepControls';
 import { QUpdateDisplay } from './components/QUpdateDisplay';
 import { StepHistory } from './components/StepHistory';
+
 export default function QLearningQuest() {
   const [currentLevel, setCurrentLevel] = useState(1);
   const [isTraining, setIsTraining] = useState(false);
@@ -44,76 +45,76 @@ export default function QLearningQuest() {
   const [maxStepsPerEpisode, setMaxStepsPerEpisode] = useState(200);
 
   // Step-by-step mode
-const [stepByStepPos, setStepByStepPos] = useState({ row: 0, col: 0 });
-const [stepByStepReward, setStepByStepReward] = useState(0);
-const [autoStepRunning, setAutoStepRunning] = useState(false);
-const [stepSpeed, setStepSpeed] = useState(500);
-
-const {
-  isStepMode,
-  setIsStepMode,
-  episodeActive,
-  currentStep,
-  stepHistory,
-  lastQUpdate,
-  highlightedCell,
-  startStepByStepEpisode,
-  executeSingleStep,
-  resetStepByStep,
-  autoStepIntervalRef
-} = useStepByStep(level, gridSize, agentRef);
-  
+  const [stepByStepPos, setStepByStepPos] = useState({ row: 0, col: 0 });
+  const [stepByStepReward, setStepByStepReward] = useState(0);
+  const [autoStepRunning, setAutoStepRunning] = useState(false);
+  const [stepSpeed, setStepSpeed] = useState(500);
   
   const agentRef = useRef(null);
   const trainingIntervalRef = useRef(null);
   const demoIntervalRef = useRef(null);
 
+  // IMPORTANT: Define level and gridSize BEFORE using them in hooks
   const level = LEVELS[currentLevel];
   const gridSize = level.size;
   const stateSize = gridSize * gridSize;
   const actionSize = 4;
 
+  // NOW we can use the hook with level and gridSize defined
+  const {
+    isStepMode,
+    setIsStepMode,
+    episodeActive,
+    currentStep,
+    stepHistory,
+    lastQUpdate,
+    highlightedCell,
+    startStepByStepEpisode,
+    executeSingleStep,
+    resetStepByStep,
+    autoStepIntervalRef
+  } = useStepByStep(level, gridSize, agentRef);
 
   const handleStartStepEpisode = () => {
-  const startPos = startStepByStepEpisode();
-  setStepByStepPos(startPos);
-  setStepByStepReward(0);
-  setIsStepMode(true);
-};
+    const startPos = startStepByStepEpisode();
+    setStepByStepPos(startPos);
+    setStepByStepReward(0);
+    setIsStepMode(true);
+  };
 
-const handleSingleStep = () => {
-  const result = executeSingleStep(stepByStepPos, stepByStepReward);
-  if (result) {
-    setStepByStepPos(result.nextPos);
-    setStepByStepReward(result.newTotalReward);
-    if (result.episodeEnded) {
-      setEpisode(prev => prev + 1);
-    }
-  }
-};
-
-const handleAutoStep = () => {
-  setAutoStepRunning(true);
-  autoStepIntervalRef.current = setInterval(() => {
+  const handleSingleStep = () => {
     const result = executeSingleStep(stepByStepPos, stepByStepReward);
     if (result) {
       setStepByStepPos(result.nextPos);
       setStepByStepReward(result.newTotalReward);
       if (result.episodeEnded) {
         setEpisode(prev => prev + 1);
-        setAutoStepRunning(false);
-        clearInterval(autoStepIntervalRef.current);
       }
     }
-  }, stepSpeed);
-};
+  };
 
-const handleStopAuto = () => {
-  setAutoStepRunning(false);
-  if (autoStepIntervalRef.current) {
-    clearInterval(autoStepIntervalRef.current);
-  }
-};
+  const handleAutoStep = () => {
+    setAutoStepRunning(true);
+    autoStepIntervalRef.current = setInterval(() => {
+      const result = executeSingleStep(stepByStepPos, stepByStepReward);
+      if (result) {
+        setStepByStepPos(result.nextPos);
+        setStepByStepReward(result.newTotalReward);
+        if (result.episodeEnded) {
+          setEpisode(prev => prev + 1);
+          setAutoStepRunning(false);
+          clearInterval(autoStepIntervalRef.current);
+        }
+      }
+    }, stepSpeed);
+  };
+
+  const handleStopAuto = () => {
+    setAutoStepRunning(false);
+    if (autoStepIntervalRef.current) {
+      clearInterval(autoStepIntervalRef.current);
+    }
+  };
 
   useEffect(() => {
     if (!agentRef.current) {
@@ -308,16 +309,16 @@ const handleStopAuto = () => {
         />
 
         {/* Step-by-Step Controls */}
-<StepByStepControls 
-  isStepMode={isStepMode}
-  episodeActive={episodeActive}
-  onStartEpisode={handleStartStepEpisode}
-  onSingleStep={handleSingleStep}
-  onAutoStep={handleAutoStep}
-  onStopAuto={handleStopAuto}
-  isAutoRunning={autoStepRunning}
-  disabled={isTraining}
-/>
+        <StepByStepControls 
+          isStepMode={isStepMode}
+          episodeActive={episodeActive}
+          onStartEpisode={handleStartStepEpisode}
+          onSingleStep={handleSingleStep}
+          onAutoStep={handleAutoStep}
+          onStopAuto={handleStopAuto}
+          isAutoRunning={autoStepRunning}
+          disabled={isTraining}
+        />
 
         {showSettings && (
           <SettingsPanel 
@@ -369,14 +370,12 @@ const handleStopAuto = () => {
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">{level.name}</h2>
               <GameGrid 
-  level={level} 
-  agentPos={isStepMode ? stepByStepPos : agentPos} 
-  showDemo={showDemo || isStepMode} 
-  gridSize={gridSize}
-  highlightedCell={highlightedCell}
-/>
-
-              
+                level={level} 
+                agentPos={isStepMode ? stepByStepPos : agentPos} 
+                showDemo={showDemo || isStepMode} 
+                gridSize={gridSize}
+                highlightedCell={highlightedCell}
+              />
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
@@ -416,14 +415,16 @@ const handleStopAuto = () => {
               avgSteps={avgSteps} agent={agentRef.current} 
             />
             <Legend />
+            
+            {/* Add Q-Update and Step History in sidebar when step mode is active */}
+            {isStepMode && (
+              <>
+                <QUpdateDisplay lastQUpdate={lastQUpdate} currentStep={currentStep} />
+                <StepHistory stepHistory={stepHistory} />
+              </>
+            )}
           </div>
         </div>
-        {isStepMode && (
-  <>
-    <QUpdateDisplay lastQUpdate={lastQUpdate} currentStep={currentStep} />
-    <StepHistory stepHistory={stepHistory} />
-  </>
-)}
 
         {rewardHistory.length > 0 && (
           <ProgressCharts rewardHistory={rewardHistory} successHistory={successHistory} />
