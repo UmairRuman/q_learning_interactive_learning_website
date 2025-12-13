@@ -1,14 +1,11 @@
-// ============================================================================
-// FILE 15: src/components/ControlBar.jsx
-// ============================================================================
+// Path: src/components/ControlBar.jsx
 
 import React from 'react';
-import { Settings, Save, Upload, Info, Brain } from 'lucide-react';
+import { Settings, Save, Upload, Info } from 'lucide-react';
 
 export const ControlBar = ({ 
   showSettings, setShowSettings,
   showInfo, setShowInfo,
-  showQTable, setShowQTable,
   saveAgent, loadAgent,
   isTraining, episode
 }) => (
@@ -45,12 +42,5 @@ export const ControlBar = ({
         Info
       </button>
     </div>
-    <button
-      onClick={() => setShowQTable(!showQTable)}
-      className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all"
-    >
-      <Brain className="w-5 h-5" />
-      {showQTable ? 'Hide' : 'Show'} Q-Table
-    </button>
   </div>
 );

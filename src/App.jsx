@@ -334,97 +334,116 @@ export default function QLearningQuest() {
 
         {showInfo && <InfoPanel />}
 
-        {/* Level Selection */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Trophy className="w-6 h-6" />
-              Select Level
-            </h2>
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {[1, 2, 3, 4].map(lvl => (
-              <button
-                key={lvl}
-                onClick={() => changeLevel(lvl)}
-                disabled={isTraining}
-                className={`p-4 rounded-lg font-semibold transition-all ${
-                  currentLevel === lvl
-                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <div className="text-sm">Level {lvl}</div>
-                <div className="text-xs mt-1">{LEVELS[lvl].name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Level Selection with Show Q-Table button */}
+<div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+      <Trophy className="w-6 h-6" />
+      Select Level
+    </h2>
+  </div>
+  <div className="grid grid-cols-4 gap-3">
+    {[1, 2, 3, 4].map(lvl => (
+      <button
+        key={lvl}
+        onClick={() => changeLevel(lvl)}
+        disabled={isTraining}
+        className={`p-4 rounded-lg font-semibold transition-all ${
+          currentLevel === lvl
+            ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900'
+            : 'bg-white/20 text-white hover:bg-white/30'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
+      >
+        <div className="text-sm">Level {lvl}</div>
+        <div className="text-xs mt-1">{LEVELS[lvl].name}</div>
+      </button>
+    ))}
+  </div>
+</div>
 
-        {showQTable && agentRef.current && (
-          <QTableHeatmap agent={agentRef.current} level={level} gridSize={gridSize} />
-        )}
+{/* Game Grid and Q-Table Section */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div className="lg:col-span-2">
+    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+      {/* Header with level name and Show Q-Table button */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-white">{level.name}</h2>
+        <button
+          onClick={() => setShowQTable(!showQTable)}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
+        >
+          <Brain className="w-4 h-4" />
+          {showQTable ? 'Show Game' : 'Show Q-Table'}
+        </button>
+      </div>
+      
+      {/* Conditional rendering: Show EITHER Game Grid OR Q-Table */}
+      {!showQTable ? (
+        <>
+          <GameGrid 
+            level={level} 
+            agentPos={isStepMode ? stepByStepPos : agentPos} 
+            showDemo={showDemo || isStepMode} 
+            gridSize={gridSize}
+            highlightedCell={highlightedCell}
+          />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-              <h2 className="text-2xl font-bold text-white mb-4">{level.name}</h2>
-              <GameGrid 
-                level={level} 
-                agentPos={isStepMode ? stepByStepPos : agentPos} 
-                showDemo={showDemo || isStepMode} 
-                gridSize={gridSize}
-                highlightedCell={highlightedCell}
-              />
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  onClick={isTraining ? stopTraining : startTraining}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                    isTraining ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-                  } text-white`}
-                >
-                  {isTraining ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  {isTraining ? 'Stop Training' : 'Start Training'}
-                </button>
-                
-                <button
-                  onClick={showDemo ? stopDemo : runDemo}
-                  disabled={isTraining || episode === 0}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all"
-                >
-                  <Zap className="w-5 h-5" />
-                  {showDemo ? 'Stop Demo' : 'Watch AI Play'}
-                </button>
-                
-                <button
-                  onClick={resetAgent}
-                  disabled={isTraining}
-                  className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all"
-                >
-                  <RotateCcw className="w-5 h-5" />
-                  Reset Agent
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <StatsPanel 
-              episode={episode} totalReward={totalReward} successRate={successRate} 
-              avgSteps={avgSteps} agent={agentRef.current} 
-            />
-            <Legend />
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              onClick={isTraining ? stopTraining : startTraining}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                isTraining ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+              } text-white`}
+            >
+              {isTraining ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              {isTraining ? 'Stop Training' : 'Start Training'}
+            </button>
             
-            {/* Add Q-Update and Step History in sidebar when step mode is active */}
-            {isStepMode && (
-              <>
-                <QUpdateDisplay lastQUpdate={lastQUpdate} currentStep={currentStep} />
-                <StepHistory stepHistory={stepHistory} />
-              </>
-            )}
+            <button
+              onClick={showDemo ? stopDemo : runDemo}
+              disabled={isTraining || episode === 0}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all"
+            >
+              <Zap className="w-5 h-5" />
+              {showDemo ? 'Stop Demo' : 'Watch AI Play'}
+            </button>
+            
+            <button
+              onClick={resetAgent}
+              disabled={isTraining}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all"
+            >
+              <RotateCcw className="w-5 h-5" />
+              Reset Agent
+            </button>
           </div>
-        </div>
+        </>
+      ) : (
+        /* Q-Table Display when toggled */
+        agentRef.current && (
+          <div className="min-h-[400px]">
+            <QTableHeatmap agent={agentRef.current} level={level} gridSize={gridSize} />
+          </div>
+        )
+      )}
+    </div>
+  </div>
+
+  <div className="space-y-6">
+    <StatsPanel 
+      episode={episode} totalReward={totalReward} successRate={successRate} 
+      avgSteps={avgSteps} agent={agentRef.current} 
+    />
+    <Legend />
+    
+    {isStepMode && (
+      <>
+        <QUpdateDisplay lastQUpdate={lastQUpdate} currentStep={currentStep} />
+        <StepHistory stepHistory={stepHistory} />
+      </>
+    )}
+  </div>
+</div>
 
         {rewardHistory.length > 0 && (
           <ProgressCharts rewardHistory={rewardHistory} successHistory={successHistory} />
