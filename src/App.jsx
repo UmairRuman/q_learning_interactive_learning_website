@@ -281,11 +281,40 @@ export default function QLearningQuest() {
   };
 
   const changeLevel = (newLevel) => {
-    stopTraining();
-    stopDemo();
-    setCurrentLevel(newLevel);
-    resetAgent();
-  };
+  stopTraining();
+  stopDemo();
+  setCurrentLevel(newLevel);
+  
+  // IMPORTANT: Get the new level's dimensions
+  const newLevelData = LEVELS[newLevel];
+  const newGridSize = newLevelData.size;
+  const newStateSize = newGridSize * newGridSize;
+  
+  // Create a NEW agent with the correct size for the new level
+  agentRef.current = new QLearningAgent(
+    newStateSize, 
+    actionSize, 
+    learningRate, 
+    discountFactor, 
+    epsilonDecay
+  );
+  
+  // Reset all states
+  setEpisode(0);
+  setTotalReward(0);
+  setSuccessRate(0);
+  setAvgSteps(0);
+  setRewardHistory([]);
+  setSuccessHistory([]);
+  setShowQTable(false); // Hide Q-table when changing levels
+  setIsStepMode(false);
+  setStepByStepPos(getStartPos(newLevelData));
+  setStepByStepReward(0);
+  setAgentPos(getStartPos(newLevelData));
+  
+  // Reset step-by-step mode
+  resetStepByStep();
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-8 relative overflow-hidden">

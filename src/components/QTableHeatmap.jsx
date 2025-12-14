@@ -5,10 +5,31 @@ import { getQValueColor } from '../utils/colorUtils';
 import { posToState } from '../utils/gridUtils';
 
 export const QTableHeatmap = ({ agent, level, gridSize }) => {
-  if (!agent || !level) {
+  // Safety checks
+  if (!agent) {
     return (
       <div className="text-white text-center p-8">
-        <p>Loading Q-Table...</p>
+        <p>⚠️ No agent initialized. Please start training first.</p>
+      </div>
+    );
+  }
+
+  if (!level || !level.grid) {
+    return (
+      <div className="text-white text-center p-8">
+        <p>⚠️ No level data available.</p>
+      </div>
+    );
+  }
+
+  // Verify Q-table size matches grid size
+  const expectedStates = gridSize * gridSize;
+  if (!agent.qTable || agent.qTable.length !== expectedStates) {
+    return (
+      <div className="text-white text-center p-8 bg-red-500/20 rounded-lg">
+        <p className="font-bold mb-2">⚠️ Q-Table Size Mismatch</p>
+        <p className="text-sm">Expected {expectedStates} states, but Q-table has {agent.qTable?.length || 0} states.</p>
+        <p className="text-sm mt-2">Please reset the agent or train on this level first.</p>
       </div>
     );
   }
@@ -16,6 +37,9 @@ export const QTableHeatmap = ({ agent, level, gridSize }) => {
   return (
     <div className="w-full">
       <h3 className="text-2xl font-bold text-white mb-2">Q-Table Heatmap</h3>
+      <p className="text-purple-200 text-sm mb-4">
+        Grid Size: {gridSize}x{gridSize} | Total States: {expectedStates}
+      </p>
       <p className="text-purple-200 text-sm mb-4">
         Showing maximum Q-value for each state (Red = Low value, Green = High value)
       </p>
@@ -33,6 +57,20 @@ export const QTableHeatmap = ({ agent, level, gridSize }) => {
           {level.grid.map((row, r) =>
             row.map((cell, c) => {
               const state = posToState(r, c, gridSize);
+              
+              // Additional safety check for this specific state
+              if (!agent.qTable[state]) {
+                return (
+                  <div
+                    key={`qtable-${r}-${c}`}
+                    className="aspect-square flex items-center justify-center font-bold rounded relative border border-red-500 bg-red-900"
+                    style={{ minWidth: '30px', minHeight: '30px' }}
+                  >
+                    <span className="text-white text-xs">ERR</span>
+                  </div>
+                );
+              }
+              
               const maxQ = Math.max(...agent.qTable[state]);
               const color = getQValueColor(maxQ);
               
