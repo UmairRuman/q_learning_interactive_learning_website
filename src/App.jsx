@@ -1,5 +1,5 @@
 // ============================================================================
-// FILE 16: src/App.jsx (MAIN FILE) - CORRECTED
+// FILE: src/App.jsx (UPDATED - WITH DOCUMENTATION)
 // ============================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -7,6 +7,7 @@ import { Play, Pause, RotateCcw, Zap, Trophy, Brain } from 'lucide-react';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { SettingsPanel } from './components/SettingsPanel';
 import { InfoPanel } from './components/InfoPanel';
+import { Documentation } from './components/Documentation';
 import { GameGrid } from './components/GameGrid';
 import { StatsPanel } from './components/StatsPanel';
 import { Legend } from './components/Legend';
@@ -17,10 +18,6 @@ import { QLearningAgent } from './core/QLearningAgent';
 import { LEVELS } from './constants/levels';
 import { REWARDS } from './constants/rewards';
 import { getStartPos, posToState, getNextPos } from './utils/gridUtils';
-import { useStepByStep } from './hooks/useStepByStep';
-import { StepByStepControls } from './components/StepByStepControls';
-import { QUpdateDisplay } from './components/QUpdateDisplay';
-import { StepHistory } from './components/StepHistory';
 
 export default function QLearningQuest() {
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -36,6 +33,7 @@ export default function QLearningQuest() {
   const [showQTable, setShowQTable] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
   const [demoSpeed, setDemoSpeed] = useState(300);
   
   const [learningRate, setLearningRate] = useState(0.1);
@@ -43,78 +41,16 @@ export default function QLearningQuest() {
   const [epsilonDecay, setEpsilonDecay] = useState(0.9995);
   const [maxEpisodes, setMaxEpisodes] = useState(5000);
   const [maxStepsPerEpisode, setMaxStepsPerEpisode] = useState(200);
-
-  // Step-by-step mode
-  const [stepByStepPos, setStepByStepPos] = useState({ row: 0, col: 0 });
-  const [stepByStepReward, setStepByStepReward] = useState(0);
-  const [autoStepRunning, setAutoStepRunning] = useState(false);
-  const [stepSpeed, setStepSpeed] = useState(500);
   
   const agentRef = useRef(null);
   const trainingIntervalRef = useRef(null);
   const demoIntervalRef = useRef(null);
 
-  // IMPORTANT: Define level and gridSize BEFORE using them in hooks
+  // Define level and gridSize
   const level = LEVELS[currentLevel];
   const gridSize = level.size;
   const stateSize = gridSize * gridSize;
   const actionSize = 4;
-
-  // NOW we can use the hook with level and gridSize defined
-  const {
-    isStepMode,
-    setIsStepMode,
-    episodeActive,
-    currentStep,
-    stepHistory,
-    lastQUpdate,
-    highlightedCell,
-    startStepByStepEpisode,
-    executeSingleStep,
-    resetStepByStep,
-    autoStepIntervalRef
-  } = useStepByStep(level, gridSize, agentRef);
-
-  const handleStartStepEpisode = () => {
-    const startPos = startStepByStepEpisode();
-    setStepByStepPos(startPos);
-    setStepByStepReward(0);
-    setIsStepMode(true);
-  };
-
-  const handleSingleStep = () => {
-    const result = executeSingleStep(stepByStepPos, stepByStepReward);
-    if (result) {
-      setStepByStepPos(result.nextPos);
-      setStepByStepReward(result.newTotalReward);
-      if (result.episodeEnded) {
-        setEpisode(prev => prev + 1);
-      }
-    }
-  };
-
-  const handleAutoStep = () => {
-    setAutoStepRunning(true);
-    autoStepIntervalRef.current = setInterval(() => {
-      const result = executeSingleStep(stepByStepPos, stepByStepReward);
-      if (result) {
-        setStepByStepPos(result.nextPos);
-        setStepByStepReward(result.newTotalReward);
-        if (result.episodeEnded) {
-          setEpisode(prev => prev + 1);
-          setAutoStepRunning(false);
-          clearInterval(autoStepIntervalRef.current);
-        }
-      }
-    }, stepSpeed);
-  };
-
-  const handleStopAuto = () => {
-    setAutoStepRunning(false);
-    if (autoStepIntervalRef.current) {
-      clearInterval(autoStepIntervalRef.current);
-    }
-  };
 
   useEffect(() => {
     if (!agentRef.current) {
@@ -242,113 +178,86 @@ export default function QLearningQuest() {
   const resetAgent = () => {
     stopTraining();
     stopDemo();
-    agentRef.current = new QLearningAgent(stateSize, actionSize, learningRate, discountFactor, epsilonDecay);
+    
+    // Create new agent with current level's correct dimensions
+    agentRef.current = new QLearningAgent(
+      stateSize, 
+      actionSize, 
+      learningRate, 
+      discountFactor, 
+      epsilonDecay
+    );
+    
     setEpisode(0);
     setTotalReward(0);
     setSuccessRate(0);
     setAvgSteps(0);
     setRewardHistory([]);
     setSuccessHistory([]);
-  };
-
-  const saveAgent = async () => {
-    const data = agentRef.current.saveToJSON();
-    const key = `qtable_level${currentLevel}`;
-    try {
-      await window.storage.set(key, JSON.stringify(data));
-      alert('Agent saved successfully! 🎉');
-    } catch (error) {
-      console.error('Failed to save agent:', error);
-      alert('Failed to save agent. Storage might be unavailable.');
-    }
-  };
-
-  const loadAgent = async () => {
-    const key = `qtable_level${currentLevel}`;
-    try {
-      const result = await window.storage.get(key);
-      if (result && result.value) {
-        const data = JSON.parse(result.value);
-        agentRef.current.loadFromJSON(data);
-        alert('Agent loaded successfully! 🚀');
-      } else {
-        alert('No saved agent found for this level.');
-      }
-    } catch (error) {
-      console.error('Failed to load agent:', error);
-      alert('No saved agent found for this level.');
-    }
+    setShowQTable(false);
+    setAgentPos(getStartPos(level));
   };
 
   const changeLevel = (newLevel) => {
-  stopTraining();
-  stopDemo();
-  setCurrentLevel(newLevel);
-  
-  // IMPORTANT: Get the new level's dimensions
-  const newLevelData = LEVELS[newLevel];
-  const newGridSize = newLevelData.size;
-  const newStateSize = newGridSize * newGridSize;
-  
-  // Create a NEW agent with the correct size for the new level
-  agentRef.current = new QLearningAgent(
-    newStateSize, 
-    actionSize, 
-    learningRate, 
-    discountFactor, 
-    epsilonDecay
-  );
-  
-  // Reset all states
-  setEpisode(0);
-  setTotalReward(0);
-  setSuccessRate(0);
-  setAvgSteps(0);
-  setRewardHistory([]);
-  setSuccessHistory([]);
-  setShowQTable(false); // Hide Q-table when changing levels
-  setIsStepMode(false);
-  setStepByStepPos(getStartPos(newLevelData));
-  setStepByStepReward(0);
-  setAgentPos(getStartPos(newLevelData));
-  
-  // Reset step-by-step mode
-  resetStepByStep();
-};
+    stopTraining();
+    stopDemo();
+    setCurrentLevel(newLevel);
+    
+    // Get the new level's dimensions
+    const newLevelData = LEVELS[newLevel];
+    const newGridSize = newLevelData.size;
+    const newStateSize = newGridSize * newGridSize;
+    
+    // Create a NEW agent with the correct size for the new level
+    agentRef.current = new QLearningAgent(
+      newStateSize, 
+      actionSize, 
+      learningRate, 
+      discountFactor, 
+      epsilonDecay
+    );
+    
+    // Reset all states
+    setEpisode(0);
+    setTotalReward(0);
+    setSuccessRate(0);
+    setAvgSteps(0);
+    setRewardHistory([]);
+    setSuccessHistory([]);
+    setShowQTable(false);
+    setAgentPos(getStartPos(newLevelData));
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-2 sm:p-4 md:p-8 relative overflow-hidden">
       <AnimatedBackground />
 
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-            <Brain className="w-12 h-12 animate-pulse" />
-            The Q-Learning Quest
+        {/* Header */}
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-2 sm:gap-3">
+            <Brain className="w-8 h-8 sm:w-10 md:w-12 animate-pulse" />
+            <span className="hidden sm:inline">The Q-Learning Quest</span>
+            <span className="sm:hidden">Q-Learning</span>
           </h1>
-          <p className="text-purple-200 text-lg">Master the Art of Reinforcement Learning</p>
+          <p className="text-sm sm:text-base md:text-lg text-purple-200">Master the Art of Reinforcement Learning</p>
         </div>
 
+        {/* Control Bar */}
         <ControlBar 
-          showSettings={showSettings} setShowSettings={setShowSettings}
-          showInfo={showInfo} setShowInfo={setShowInfo}
-          showQTable={showQTable} setShowQTable={setShowQTable}
-          saveAgent={saveAgent} loadAgent={loadAgent}
-          isTraining={isTraining} episode={episode}
+          showSettings={showSettings} 
+          setShowSettings={setShowSettings}
+          showInfo={showInfo} 
+          setShowInfo={setShowInfo}
+          showDocs={showDocs}
+          setShowDocs={setShowDocs}
+          isTraining={isTraining}
         />
 
-        {/* Step-by-Step Controls */}
-        <StepByStepControls 
-          isStepMode={isStepMode}
-          episodeActive={episodeActive}
-          onStartEpisode={handleStartStepEpisode}
-          onSingleStep={handleSingleStep}
-          onAutoStep={handleAutoStep}
-          onStopAuto={handleStopAuto}
-          isAutoRunning={autoStepRunning}
-          disabled={isTraining}
-        />
+        {/* Documentation Panel */}
+        {showDocs && <Documentation />}
 
+        {/* Settings Panel */}
         {showSettings && (
           <SettingsPanel 
             learningRate={learningRate} setLearningRate={setLearningRate}
@@ -361,119 +270,118 @@ export default function QLearningQuest() {
           />
         )}
 
+        {/* Info Panel */}
         {showInfo && <InfoPanel />}
 
-        {/* Level Selection with Show Q-Table button */}
-<div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-6">
-  <div className="flex items-center justify-between mb-4">
-    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-      <Trophy className="w-6 h-6" />
-      Select Level
-    </h2>
-  </div>
-  <div className="grid grid-cols-4 gap-3">
-    {[1, 2, 3, 4].map(lvl => (
-      <button
-        key={lvl}
-        onClick={() => changeLevel(lvl)}
-        disabled={isTraining}
-        className={`p-4 rounded-lg font-semibold transition-all ${
-          currentLevel === lvl
-            ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900'
-            : 'bg-white/20 text-white hover:bg-white/30'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
-      >
-        <div className="text-sm">Level {lvl}</div>
-        <div className="text-xs mt-1">{LEVELS[lvl].name}</div>
-      </button>
-    ))}
-  </div>
-</div>
-
-{/* Game Grid and Q-Table Section */}
-<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <div className="lg:col-span-2">
-    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-      {/* Header with level name and Show Q-Table button */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-white">{level.name}</h2>
-        <button
-          onClick={() => setShowQTable(!showQTable)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all text-sm"
-        >
-          <Brain className="w-4 h-4" />
-          {showQTable ? 'Show Game' : 'Show Q-Table'}
-        </button>
-      </div>
-      
-      {/* Conditional rendering: Show EITHER Game Grid OR Q-Table */}
-      {!showQTable ? (
-        <>
-          <GameGrid 
-            level={level} 
-            agentPos={isStepMode ? stepByStepPos : agentPos} 
-            showDemo={showDemo || isStepMode} 
-            gridSize={gridSize}
-            highlightedCell={highlightedCell}
-          />
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={isTraining ? stopTraining : startTraining}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                isTraining ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-              } text-white`}
-            >
-              {isTraining ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              {isTraining ? 'Stop Training' : 'Start Training'}
-            </button>
-            
-            <button
-              onClick={showDemo ? stopDemo : runDemo}
-              disabled={isTraining || episode === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all"
-            >
-              <Zap className="w-5 h-5" />
-              {showDemo ? 'Stop Demo' : 'Watch AI Play'}
-            </button>
-            
-            <button
-              onClick={resetAgent}
-              disabled={isTraining}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all"
-            >
-              <RotateCcw className="w-5 h-5" />
-              Reset Agent
-            </button>
+        {/* Level Selection */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="hidden sm:inline">Select Level</span>
+              <span className="sm:hidden">Level</span>
+            </h2>
           </div>
-        </>
-      ) : (
-        /* Q-Table Display when toggled */
-        agentRef.current && (
-          <div className="min-h-[400px]">
-            <QTableHeatmap agent={agentRef.current} level={level} gridSize={gridSize} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {[1, 2, 3, 4].map(lvl => (
+              <button
+                key={lvl}
+                onClick={() => changeLevel(lvl)}
+                disabled={isTraining}
+                className={`p-3 sm:p-4 rounded-lg font-semibold transition-all text-sm sm:text-base ${
+                  currentLevel === lvl
+                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <div className="text-xs sm:text-sm">Level {lvl}</div>
+                <div className="text-xs mt-1 hidden sm:block">{LEVELS[lvl].name}</div>
+              </button>
+            ))}
           </div>
-        )
-      )}
-    </div>
-  </div>
+        </div>
 
-  <div className="space-y-6">
-    <StatsPanel 
-      episode={episode} totalReward={totalReward} successRate={successRate} 
-      avgSteps={avgSteps} agent={agentRef.current} 
-    />
-    <Legend />
-    
-    {isStepMode && (
-      <>
-        <QUpdateDisplay lastQUpdate={lastQUpdate} currentStep={currentStep} />
-        <StepHistory stepHistory={stepHistory} />
-      </>
-    )}
-  </div>
-</div>
+        {/* Game Grid and Q-Table Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6">
+              {/* Header with level name and Show Q-Table button */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">{level.name}</h2>
+                <button
+                  onClick={() => setShowQTable(!showQTable)}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all text-xs sm:text-sm"
+                >
+                  <Brain className="w-4 h-4" />
+                  <span className="hidden sm:inline">{showQTable ? 'Show Game' : 'Show Q-Table'}</span>
+                  <span className="sm:hidden">{showQTable ? 'Game' : 'Q-Table'}</span>
+                </button>
+              </div>
+              
+              {/* Conditional rendering: Show EITHER Game Grid OR Q-Table */}
+              {!showQTable ? (
+                <>
+                  <GameGrid 
+                    level={level} 
+                    agentPos={agentPos} 
+                    showDemo={showDemo} 
+                    gridSize={gridSize}
+                  />
 
+                  <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                      onClick={isTraining ? stopTraining : startTraining}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
+                        isTraining ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+                      } text-white flex-1 sm:flex-none justify-center`}
+                    >
+                      {isTraining ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      <span className="hidden sm:inline">{isTraining ? 'Stop Training' : 'Start Training'}</span>
+                      <span className="sm:hidden">{isTraining ? 'Stop' : 'Train'}</span>
+                    </button>
+                    
+                    <button
+                      onClick={showDemo ? stopDemo : runDemo}
+                      disabled={isTraining || episode === 0}
+                      className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all text-sm sm:text-base flex-1 sm:flex-none justify-center"
+                    >
+                      <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">{showDemo ? 'Stop Demo' : 'Watch AI Play'}</span>
+                      <span className="sm:hidden">{showDemo ? 'Stop' : 'Demo'}</span>
+                    </button>
+                    
+                    <button
+                      onClick={resetAgent}
+                      disabled={isTraining}
+                      className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all text-sm sm:text-base flex-1 sm:flex-none justify-center"
+                    >
+                      <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">Reset Agent</span>
+                      <span className="sm:hidden">Reset</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Q-Table Display when toggled */
+                agentRef.current && (
+                  <div className="min-h-[300px] sm:min-h-[400px]">
+                    <QTableHeatmap agent={agentRef.current} level={level} gridSize={gridSize} />
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4 sm:space-y-6">
+            <StatsPanel 
+              episode={episode} totalReward={totalReward} successRate={successRate} 
+              avgSteps={avgSteps} agent={agentRef.current} 
+            />
+            <Legend />
+          </div>
+        </div>
+
+        {/* Progress Charts */}
         {rewardHistory.length > 0 && (
           <ProgressCharts rewardHistory={rewardHistory} successHistory={successHistory} />
         )}
