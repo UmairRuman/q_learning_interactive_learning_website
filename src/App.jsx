@@ -19,6 +19,7 @@ import { LEVELS } from './constants/levels';
 import { REWARDS } from './constants/rewards';
 import { LearningProcessModal } from './components/LearningProcessModal';
 import { getStartPos, posToState, getNextPos } from './utils/gridUtils';
+import { Logo } from './components/Logo';
 
 export default function QLearningQuest() {
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -236,14 +237,15 @@ export default function QLearningQuest() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-4 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-2 sm:gap-3">
-            <Brain className="w-8 h-8 sm:w-10 md:w-12 animate-pulse" />
-            <span className="hidden sm:inline">The Q-Learning Quest</span>
-            <span className="sm:hidden">Q-Learning</span>
-          </h1>
-          <p className="text-sm sm:text-base md:text-lg text-purple-200">Master the Art of Reinforcement Learning</p>
-        </div>
+       
+<div className="text-center mb-4 sm:mb-8">
+  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 flex items-center justify-center gap-2 sm:gap-3">
+    <Logo size={48} className="sm:w-12 sm:h-12" />
+    <span className="hidden sm:inline">The Q-Learning Quest</span>
+    <span className="sm:hidden">Q-Learning</span>
+  </h1>
+  <p className="text-sm sm:text-base md:text-lg text-purple-200">Master the Art of Reinforcement Learning</p>
+</div>
 
         {/* Control Bar */}
         <ControlBar 
