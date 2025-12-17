@@ -14,7 +14,7 @@ export const Footer = () => {
           {/* Left */}
           <div className="text-center sm:text-left">
             <p className="text-white font-semibold">
-              Created by <span className="text-cyan-400">Umair Ruman</span>
+              Developed by <span className="text-cyan-400">Umair Ruman</span>
             </p>
             <p className="text-xs text-purple-300">
               AI Engineer & Full Stack Developer
