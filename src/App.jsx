@@ -20,6 +20,7 @@ import { REWARDS } from './constants/rewards';
 import { LearningProcessModal } from './components/LearningProcessModal';
 import { getStartPos, posToState, getNextPos } from './utils/gridUtils';
 import { Logo } from './components/Logo';
+import { Footer } from './components/Footer';
 
 export default function QLearningQuest() {
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -411,7 +412,11 @@ export default function QLearningQuest() {
         {rewardHistory.length > 0 && (
           <ProgressCharts rewardHistory={rewardHistory} successHistory={successHistory} />
         )}
+
+     
       </div>
+          {/* ADD FOOTER HERE */}
+      <Footer />
     </div>
   );
 }
