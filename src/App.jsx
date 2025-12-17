@@ -17,6 +17,7 @@ import { ControlBar } from './components/ControlBar';
 import { QLearningAgent } from './core/QLearningAgent';
 import { LEVELS } from './constants/levels';
 import { REWARDS } from './constants/rewards';
+import { LearningProcessModal } from './components/LearningProcessModal';
 import { getStartPos, posToState, getNextPos } from './utils/gridUtils';
 
 export default function QLearningQuest() {
@@ -41,6 +42,7 @@ export default function QLearningQuest() {
   const [epsilonDecay, setEpsilonDecay] = useState(0.9995);
   const [maxEpisodes, setMaxEpisodes] = useState(5000);
   const [maxStepsPerEpisode, setMaxStepsPerEpisode] = useState(200);
+  const [showLearningProcess, setShowLearningProcess] = useState(false);
   
   const agentRef = useRef(null);
   const trainingIntervalRef = useRef(null);
@@ -301,85 +303,107 @@ export default function QLearningQuest() {
           </div>
         </div>
 
-        {/* Game Grid and Q-Table Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6">
-              {/* Header with level name and Show Q-Table button */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-white">{level.name}</h2>
-                <button
-                  onClick={() => setShowQTable(!showQTable)}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all text-xs sm:text-sm"
-                >
-                  <Brain className="w-4 h-4" />
-                  <span className="hidden sm:inline">{showQTable ? 'Show Game' : 'Show Q-Table'}</span>
-                  <span className="sm:hidden">{showQTable ? 'Game' : 'Q-Table'}</span>
-                </button>
-              </div>
-              
-              {/* Conditional rendering: Show EITHER Game Grid OR Q-Table */}
-              {!showQTable ? (
-                <>
-                  <GameGrid 
-                    level={level} 
-                    agentPos={agentPos} 
-                    showDemo={showDemo} 
-                    gridSize={gridSize}
-                  />
+      {/* Game Grid and Q-Table Section */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+  <div className="lg:col-span-2">
+    <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-6">
+      {/* Header with level name and BOTH buttons */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-white">{level.name}</h2>
+        
+        {/* Button Group - Add this div to group both buttons */}
+        <div className="flex gap-2">
+          {/* NEW: "How It Learns" Button */}
+          <button
+            onClick={() => setShowLearningProcess(true)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-semibold transition-all text-xs sm:text-sm"
+          >
+            <Zap className="w-4 h-4" />
+            <span className="hidden sm:inline">How It Learns</span>
+            <span className="sm:hidden">Learn</span>
+          </button>
 
-                  <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
-                    <button
-                      onClick={isTraining ? stopTraining : startTraining}
-                      className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
-                        isTraining ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-                      } text-white flex-1 sm:flex-none justify-center`}
-                    >
-                      {isTraining ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
-                      <span className="hidden sm:inline">{isTraining ? 'Stop Training' : 'Start Training'}</span>
-                      <span className="sm:hidden">{isTraining ? 'Stop' : 'Train'}</span>
-                    </button>
-                    
-                    <button
-                      onClick={showDemo ? stopDemo : runDemo}
-                      disabled={isTraining || episode === 0}
-                      className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all text-sm sm:text-base flex-1 sm:flex-none justify-center"
-                    >
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="hidden sm:inline">{showDemo ? 'Stop Demo' : 'Watch AI Play'}</span>
-                      <span className="sm:hidden">{showDemo ? 'Stop' : 'Demo'}</span>
-                    </button>
-                    
-                    <button
-                      onClick={resetAgent}
-                      disabled={isTraining}
-                      className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all text-sm sm:text-base flex-1 sm:flex-none justify-center"
-                    >
-                      <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="hidden sm:inline">Reset Agent</span>
-                      <span className="sm:hidden">Reset</span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                /* Q-Table Display when toggled */
-                agentRef.current && (
-                  <div className="min-h-[300px] sm:min-h-[400px]">
-                    <QTableHeatmap agent={agentRef.current} level={level} gridSize={gridSize} />
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-4 sm:space-y-6">
-            <StatsPanel 
-              episode={episode} totalReward={totalReward} successRate={successRate} 
-              avgSteps={avgSteps} agent={agentRef.current} 
-            />
-            <Legend />
-          </div>
+          {/* EXISTING: "Show Q-Table" Button */}
+          <button
+            onClick={() => setShowQTable(!showQTable)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition-all text-xs sm:text-sm"
+          >
+            <Brain className="w-4 h-4" />
+            <span className="hidden sm:inline">{showQTable ? 'Show Game' : 'Show Q-Table'}</span>
+            <span className="sm:hidden">{showQTable ? 'Game' : 'Q-Table'}</span>
+          </button>
         </div>
+      </div>
+      
+      {/* Conditional rendering: Show EITHER Game Grid OR Q-Table */}
+      {!showQTable ? (
+        <>
+          <GameGrid 
+            level={level} 
+            agentPos={agentPos} 
+            showDemo={showDemo} 
+            gridSize={gridSize}
+          />
+
+          <div className="mt-4 sm:mt-6 flex flex-wrap gap-2 sm:gap-3">
+            <button
+              onClick={isTraining ? stopTraining : startTraining}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
+                isTraining ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+              } text-white flex-1 sm:flex-none justify-center`}
+            >
+              {isTraining ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
+              <span className="hidden sm:inline">{isTraining ? 'Stop Training' : 'Start Training'}</span>
+              <span className="sm:hidden">{isTraining ? 'Stop' : 'Train'}</span>
+            </button>
+            
+            <button
+              onClick={showDemo ? stopDemo : runDemo}
+              disabled={isTraining || episode === 0}
+              className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all text-sm sm:text-base flex-1 sm:flex-none justify-center"
+            >
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">{showDemo ? 'Stop Demo' : 'Watch AI Play'}</span>
+              <span className="sm:hidden">{showDemo ? 'Stop' : 'Demo'}</span>
+            </button>
+            
+            <button
+              onClick={resetAgent}
+              disabled={isTraining}
+              className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-all text-sm sm:text-base flex-1 sm:flex-none justify-center"
+            >
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Reset Agent</span>
+              <span className="sm:hidden">Reset</span>
+            </button>
+          </div>
+        </>
+      ) : (
+        /* Q-Table Display when toggled */
+        agentRef.current && (
+          <div className="min-h-[300px] sm:min-h-[400px]">
+            <QTableHeatmap agent={agentRef.current} level={level} gridSize={gridSize} />
+          </div>
+        )
+      )}
+    </div>
+  </div>
+
+  <div className="space-y-4 sm:space-y-6">
+    <StatsPanel 
+      episode={episode} totalReward={totalReward} successRate={successRate} 
+      avgSteps={avgSteps} agent={agentRef.current} 
+    />
+    <Legend />
+  </div>
+</div>
+
+{/* MOVE THIS MODAL OUTSIDE - Place it at the very end before closing main div */}
+{/* This should be AFTER the entire grid section, not inside it */}
+<LearningProcessModal 
+  isOpen={showLearningProcess} 
+  onClose={() => setShowLearningProcess(false)} 
+/>
 
         {/* Progress Charts */}
         {rewardHistory.length > 0 && (
